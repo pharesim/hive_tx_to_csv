@@ -6,9 +6,9 @@ import requests
 import json
 
 # Set parameters
-account_name = 'hbdstabilizer'
-start_date = datetime(2024, 8, 22)
-end_date = datetime(2024, 8, 23)
+account_names = ['hbdstabilizer', 'account2' ,'account3', 'account4']
+start_date = datetime(2024, 9, 1)
+end_date = datetime(2024, 9, 2)
 
 # Initialize the Hive blockchain instance
 hive = Hive(node=['https://api.hive.blog','https://api.deathwing.me'])
@@ -190,14 +190,18 @@ def aggregate_transactions(transactions):
     
     return aggregated_df
 
-# Get transactions for the given account and time range
-transactions = get_transactions_for_account(account_name, start_date, end_date)
 
-# Aggregate the transactions by date and type
-aggregated_data = aggregate_transactions(transactions)
+for a in account_names:
 
-# Export to CSV
-csv_filename = f"{account_name}_transactions_{start_date.strftime('%Y%m%d')}_to_{end_date.strftime('%Y%m%d')}.csv"
-aggregated_data.to_csv(csv_filename, index=False)
+	# Get transactions for the given account and time range
+	transactions = get_transactions_for_account(a, start_date, end_date)
 
-print(f"CSV file saved as: {csv_filename}")
+	# Aggregate the transactions by date and type
+	aggregated_data = aggregate_transactions(transactions)
+
+	# Export to CSV
+	csv_filename = f"{a}_transactions_{start_date.strftime('%Y%m%d')}_to_{end_date.strftime('%Y%m%d')}.csv"
+	aggregated_data.to_csv(csv_filename, index=False)
+
+	print(f"CSV file saved as: {csv_filename}")
+
