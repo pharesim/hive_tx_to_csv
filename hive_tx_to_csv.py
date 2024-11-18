@@ -8,7 +8,7 @@ import json
 # Set parameters
 account_names = ['account1','account2']
 start_date = datetime(2023, 11, 17)
-end_date = datetime(2024, 11, 18)
+end_date = datetime(2023, 11, 18)
 
 # Initialize the Hive blockchain instance
 hive = Hive(node=['https://api.hive.blog','https://api.deathwing.me'])
@@ -44,7 +44,7 @@ def get_transactions_for_account(account_name, start_date, end_date):
 
    # Operations to include/exclude (not working with history_reverse, needs to be filtered in loop)
     ops = ['return_vesting_delegation','delegate_vesting_shares','transfer_to_vesting','proposal_pay','fill_order','author_reward','comment_benefactor_reward','convert','fill_convert_request','producer_reward','curation_reward','fill_vesting_withdraw','transfer']
-    excluded = ['witness_set_properties','vote','effective_comment_vote','account_witness_vote','comment','claim_reward_balance','update_proposal_votes','custom_json','comment_reward','comment_payout_update','comment_options','withdraw_vesting','delayed_voting','limit_order_create','limit_order_cancelled']
+    excluded = ['account_update','witness_set_properties','vote','effective_comment_vote','account_witness_vote','comment','claim_reward_balance','update_proposal_votes','custom_json','comment_reward','comment_payout_update','comment_options','withdraw_vesting','delayed_voting','limit_order_create','limit_order_cancelled']
        
     # Iterate over account history
     scanned_tx = 0
