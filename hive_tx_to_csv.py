@@ -6,9 +6,9 @@ import requests
 import json
 
 # Set parameters
-account_names = ['hbdstabilizer', 'account2' ,'account3', 'account4']
-start_date = datetime(2024, 9, 1)
-end_date = datetime(2024, 9, 2)
+account_names = ['pharesim']
+start_date = datetime(2023, 9, 29)
+end_date = datetime(2024, 1, 1)
 
 # Initialize the Hive blockchain instance
 hive = Hive(node=['https://api.hive.blog','https://api.deathwing.me'])
@@ -20,9 +20,13 @@ def get_vests_to_hive_ratio(block_num):
     }
 
     data = '{"jsonrpc":"2.0", "method":"hafsql.dynamic_global_properties", "params":{"block_num": '+str(block_num)+'}, "id":1}'
-
-    response = requests.post(hafsql, headers=headers, data=data)
-    global_properties = json.loads(response.text)['result'][0]
+    response = 0
+    while response == 0:
+        try:
+            response = requests.post(hafsql, headers=headers, data=data)
+            global_properties = json.loads(response.text)['result'][0]
+        except:
+            response = 0
     
     # Calculate VESTS to HIVE ratio
     total_vesting_fund_hive = float(global_properties['total_vesting_fund_hive'])
@@ -38,10 +42,10 @@ def get_transactions_for_account(account_name, start_date, end_date):
     # List to hold transaction data
     transactions = []
 
-    # Operations to include/exclude (not working with history_reverse, needs to be filtered in loop)
-    ops = ['proposal_pay','fill_order','author_reward','comment_benefactor_reward','convert','fill_convert_request','producer_reward','curation_reward','fill_vesting_withdraw','transfer']
-    excluded = ['witness_set_properties','vote','effective_comment_vote','account_witness_vote','comment','claim_reward_balance','update_proposal_votes','custom_json','comment_reward','comment_payout_update','comment_options','return_vesting_delegation','withdraw_vesting','delegate_vesting_shares','delayed_voting','limit_order_create','limit_order_cancelled']
-    
+   # Operations to include/exclude (not working with history_reverse, needs to be filtered in loop)
+    ops = ['return_vesting_delegation','delegate_vesting_shares','transfer_to_vesting','proposal_pay','fill_order','author_reward','comment_benefactor_reward','convert','fill_convert_request','producer_reward','curation_reward','fill_vesting_withdraw','transfer']
+    excluded = ['witness_set_properties','vote','effective_comment_vote','account_witness_vote','comment','claim_reward_balance','update_proposal_votes','custom_json','comment_reward','comment_payout_update','comment_options','withdraw_vesting','delayed_voting','limit_order_create','limit_order_cancelled']
+       
     # Iterate over account history
     scanned_tx = 0
     last_ratio_update = 0
@@ -171,6 +175,32 @@ def get_transactions_for_account(account_name, start_date, end_date):
                 sender = h['payer']
                 recipient = h['receiver']
                 direction = 'incoming'
+
+            # Power up
+            elif h['type'] == 'transfer_to_vesting':
+                currency = 'HIVE'
+                amount = int(h['amount']['amount']) / 1000
+                sender = h['from']
+                recipient = 'staked.hive'
+                direction = 'stake'
+
+            # Delegate HP
+            elif h['type'] == 'delegate_vesting_shares':
+                currency = 'HP'
+                vesting_amount = float(h['vesting_shares']['amount'])
+                amount = round(vesting_amount * vests_to_hive_ratio / 1000,3)
+                sender = h['delegator']
+                recipient = h['delegatee']
+                direction = 'delegate'
+
+            # Undelegate HP
+            elif h['type'] == 'return_vesting_delegation':
+                currency = 'HP'
+                vesting_amount = float(h['vesting_shares']['amount'])
+                amount = round(vesting_amount * vests_to_hive_ratio / 1000,3)
+                sender = 'delegated.hive'
+                recipient = h['account']
+                direction = 'undelegate'
 
             else:
                 print(h)
