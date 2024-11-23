@@ -6,9 +6,9 @@ import requests
 import json
 
 # Set parameters
-account_names = ['pharesim']
-start_date = datetime(2024, 3, 1)
-end_date = datetime(2024, 4, 1)
+account_names = ['account1','account2']
+start_date = datetime(2023, 12, 1)
+end_date = datetime(2024, 1, 1)
 
 # Initialize the Hive blockchain instance
 hive = Hive(node=['https://api.hive.blog','https://api.deathwing.me'])
