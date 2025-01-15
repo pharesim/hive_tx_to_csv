@@ -38,7 +38,6 @@ def execute_query(conn, cursor, query, params, tx_type, account_name, filter_acc
                 results.append((tx_date, tx_type, direction, sender, recipient, currency, amount))
         return results, True
     except (OperationalError, psycopg2.Error) as e:
-        conn.rollback()
         #print(f"\n{e}", end="")
         return [], False
 
@@ -89,6 +88,13 @@ def get_transactions_for_account(account_name, start_date, end_date):
         FROM op_transfer
         WHERE ("from" = %s OR "to" = %s) AND timestamp BETWEEN %s AND %s
         """, (account_name, account_name, account_name, start_date, end_date)),
+        ("""
+        SELECT {date_field} AS date, 'interest_operation' AS type, 
+               'incoming' AS direction, 
+               'hive.rewards' AS sender, owner AS recipient, interest_symbol AS currency, interest AS total_amount
+        FROM vo_interest_operation
+        WHERE owner = %s AND timestamp BETWEEN %s AND %s
+        """, (account_name, start_date, end_date)),
         ("""
         SELECT {date_field} AS date, 'fill_vesting_withdraw' AS type, 
                'unstake' AS direction, 
