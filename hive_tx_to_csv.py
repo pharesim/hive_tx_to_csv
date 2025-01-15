@@ -1,14 +1,14 @@
 from beem import Hive
 from beem.account import Account
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 import json
 
 # Set parameters
 account_names = ['account1','account2','account3']
-start_date = datetime(2024, 12, 1)
-end_date = datetime(2025, 1, 1)
+start_date = datetime(2024, 1, 1)
+end_date = datetime(2024, 12, 31)
 
 # Initialize the Hive blockchain instance
 hive = Hive(node=['https://api.hive.blog','https://api.deathwing.me'])
@@ -220,7 +220,7 @@ def aggregate_transactions(transactions):
     
     return aggregated_df
 
-
+end_date = end_date + timedelta(days=1) - timedelta(seconds=1)
 for a in account_names:
 
 	# Get transactions for the given account and time range
