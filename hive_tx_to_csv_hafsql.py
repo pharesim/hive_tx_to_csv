@@ -79,7 +79,7 @@ def get_transactions_for_account(account_name, start_date, end_date):
     # Queries to fetch transactions for each operation type
     queries = [
         ("""
-        SELECT {date_field} AS date, 'transfer' AS type, 
+        SELECT DATE(timestamp) AS date, 'transfer' AS type, 
                CASE 
                    WHEN "to" = %s THEN 'incoming' 
                    ELSE 'outgoing' 
@@ -89,80 +89,80 @@ def get_transactions_for_account(account_name, start_date, end_date):
         WHERE ("from" = %s OR "to" = %s) AND timestamp BETWEEN %s AND %s
         """, (account_name, account_name, account_name, start_date, end_date)),
         ("""
-        SELECT {date_field} AS date, 'interest' AS type, 
+        SELECT DATE(timestamp) AS date, 'interest' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, owner AS recipient, interest_symbol AS currency, interest AS total_amount
         FROM vo_interest_operation
         WHERE owner = %s AND timestamp BETWEEN %s AND %s
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT {date_field} AS date, 'fill_vesting_withdraw' AS type, 
+        SELECT DATE(timestamp) AS date, 'fill_vesting_withdraw' AS type, 
                'unstake' AS direction, 
                'staked.hive' AS sender, to_account AS recipient, 'HIVE' AS currency, deposited AS total_amount
         FROM vo_fill_vesting_withdraw
         WHERE to_account = %s AND timestamp BETWEEN %s AND %s
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT {date_field} AS date, 'curation_reward' AS type, 
+        SELECT DATE(timestamp) AS date, 'curation_reward' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, curator AS recipient, 'HP' AS currency, reward_historical_hp AS total_amount
         FROM vo_curation_reward
         WHERE curator = %s AND timestamp BETWEEN %s AND %s
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT {date_field} AS date, 'fill_convert_request' AS type, 
+        SELECT DATE(timestamp) AS date, 'fill_convert_request' AS type, 
                'incoming' AS direction, 
                owner AS sender, owner AS recipient, 'HIVE' AS currency, amount_out AS total_amount
         FROM vo_fill_convert_request
         WHERE owner = %s AND timestamp BETWEEN %s AND %s
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT {date_field} AS date, 'convert' AS type, 
+        SELECT DATE(timestamp) AS date, 'convert' AS type, 
                'outgoing' AS direction, 
                owner AS sender, owner AS recipient, 'HBD' AS currency, amount AS total_amount
         FROM op_convert
         WHERE owner = %s AND timestamp BETWEEN %s AND %s
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT {date_field} AS date, 'comment_benefactor_reward' AS type, 
+        SELECT DATE(timestamp) AS date, 'comment_benefactor_reward' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, benefactor AS recipient, 'HBD' AS currency, hbd_payout AS total_amount
         FROM vo_comment_benefactor_reward
         WHERE benefactor = %s AND timestamp BETWEEN %s AND %s
         UNION ALL
-        SELECT {date_field} AS date, 'comment_benefactor_reward' AS type, 
+        SELECT DATE(timestamp) AS date, 'comment_benefactor_reward' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, benefactor AS recipient, 'HIVE' AS currency, hive_payout AS total_amount
         FROM vo_comment_benefactor_reward
         WHERE benefactor = %s AND timestamp BETWEEN %s AND %s
         UNION ALL
-        SELECT {date_field} AS date, 'comment_benefactor_reward' AS type, 
+        SELECT DATE(timestamp) AS date, 'comment_benefactor_reward' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, benefactor AS recipient, 'HP' AS currency, vesting_payout_hp AS total_amount
         FROM vo_comment_benefactor_reward
         WHERE benefactor = %s AND timestamp BETWEEN %s AND %s
         """, (account_name, start_date, end_date, account_name, start_date, end_date, account_name, start_date, end_date)),
         ("""
-        SELECT {date_field} AS date, 'author_reward' AS type, 
+        SELECT DATE(timestamp) AS date, 'author_reward' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, author AS recipient, 'HBD' AS currency, hbd_payout AS total_amount
         FROM vo_author_reward
         WHERE author = %s AND timestamp BETWEEN %s AND %s
         UNION ALL
-        SELECT {date_field} AS date, 'author_reward' AS type, 
+        SELECT DATE(timestamp) AS date, 'author_reward' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, author AS recipient, 'HIVE' AS currency, hive_payout AS total_amount
         FROM vo_author_reward
         WHERE author = %s AND timestamp BETWEEN %s AND %s
         UNION ALL
-        SELECT {date_field} AS date, 'author_reward' AS type, 
+        SELECT DATE(timestamp) AS date, 'author_reward' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, author AS recipient, 'HP' AS currency, vesting_payout_hp AS total_amount
         FROM vo_author_reward
         WHERE author = %s AND timestamp BETWEEN %s AND %s
         """, (account_name, start_date, end_date, account_name, start_date, end_date, account_name, start_date, end_date)),
         ("""
-        SELECT {date_field} AS date, 'fill_order' AS type, 
+        SELECT DATE(timestamp) AS date, 'fill_order' AS type, 
                CASE 
                    WHEN open_owner = %s THEN 'incoming' 
                    ELSE 'outgoing' 
@@ -172,21 +172,21 @@ def get_transactions_for_account(account_name, start_date, end_date):
         WHERE (current_owner = %s OR open_owner = %s) AND timestamp BETWEEN %s AND %s
         """, (account_name, account_name, account_name, start_date, end_date)),
         ("""
-        SELECT {date_field} AS date, 'proposal_pay' AS type, 
+        SELECT DATE(timestamp) AS date, 'proposal_pay' AS type, 
                'incoming' AS direction, 
                payer AS sender, receiver AS recipient, 'HBD' AS currency, payment AS total_amount
         FROM vo_proposal_pay
         WHERE receiver = %s AND timestamp BETWEEN %s AND %s
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT {date_field} AS date, 'transfer_to_vesting' AS type, 
+        SELECT DATE(timestamp) AS date, 'transfer_to_vesting' AS type, 
                'outgoing' AS direction, 
                "from" AS sender, 'staked.hive' AS recipient, 'HIVE' AS currency, amount AS total_amount
         FROM op_transfer_to_vesting
         WHERE "from" = %s AND timestamp BETWEEN %s AND %s
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT {date_field} AS date, 'delegate_vesting_shares' AS type, 
+        SELECT DATE(timestamp) AS date, 'delegate_vesting_shares' AS type, 
                CASE 
                    WHEN delegatee = %s THEN 'incoming' 
                    ELSE 'outgoing' 
@@ -196,14 +196,14 @@ def get_transactions_for_account(account_name, start_date, end_date):
         WHERE (delegator = %s OR delegatee = %s) AND timestamp BETWEEN %s AND %s
         """, (account_name, account_name, account_name, start_date, end_date)),
         ("""
-        SELECT {date_field} AS date, 'return_vesting_delegation' AS type, 
+        SELECT DATE(timestamp) AS date, 'return_vesting_delegation' AS type, 
                'undelegate' AS direction, 
                'delegated.hive' AS sender, account AS recipient, 'HP' AS currency, vesting_shares_historical_hp AS total_amount
         FROM vo_return_vesting_delegation
         WHERE account = %s AND timestamp BETWEEN %s AND %s
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT {date_field} AS date, 'producer_reward' AS type, 
+        SELECT DATE(timestamp) AS date, 'producer_reward' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, producer AS recipient, 'HP' AS currency, vesting_shares_historical_hp AS total_amount
         FROM vo_producer_reward
@@ -213,16 +213,12 @@ def get_transactions_for_account(account_name, start_date, end_date):
 
     for query, params in queries:
         tx_type = query.split(',')[1].split("AS")[0].strip()
-        result, success = execute_query(conn, cursor, query.format(
-            date_field="DATE(timestamp)"
-        ), params, tx_type, account_name)
+        result, success = execute_query(conn, cursor, query, params, tx_type, account_name)
         if not success:
             for interval, interval_name in intervals:
                 if interval < end_date - start_date:
                     print(f"\nFailed getting {tx_type} transactions. Trying {interval_name} intervals...", end="")
-                    result, success = execute_query_with_intervals(conn, cursor, query.format(
-                        date_field="DATE(timestamp)"
-                    ), params, tx_type, account_name, start_date, end_date, interval)
+                    result, success = execute_query_with_intervals(conn, cursor, query, params, tx_type, account_name, start_date, end_date, interval)
                     if success:
                         break
             if not success:
