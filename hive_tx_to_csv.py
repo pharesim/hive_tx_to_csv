@@ -87,7 +87,7 @@ def get_transactions_for_account(account_name, start_date, end_date):
                 direction = 'incoming' if recipient == account_name else 'outgoing'
 
             # Interest
-            if h['type'] == 'interest':
+            elif h['type'] == 'interest':
                 currency = 'HBD'
                 amount = int(h['interest']['amount']) / 10**h['interest']['precision']
                 sender = 'hive.rewards'
