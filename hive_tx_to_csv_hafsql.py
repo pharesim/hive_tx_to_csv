@@ -89,7 +89,7 @@ def get_transactions_for_account(account_name, start_date, end_date):
         WHERE ("from" = %s OR "to" = %s) AND timestamp BETWEEN %s AND %s
         """, (account_name, account_name, account_name, start_date, end_date)),
         ("""
-        SELECT {date_field} AS date, 'interest_operation' AS type, 
+        SELECT {date_field} AS date, 'interest' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, owner AS recipient, interest_symbol AS currency, interest AS total_amount
         FROM vo_interest_operation

@@ -6,9 +6,9 @@ import requests
 import json
 
 # Set parameters
-account_names = ['account1','account2','account3']
-start_date = datetime(2024, 1, 1)
-end_date = datetime(2024, 12, 31)
+account_names = ['pharesim']
+start_date = datetime(2023, 1, 9)
+end_date = datetime(2023, 1, 9)
 
 # Initialize the Hive blockchain instance
 hive = Hive(node=['https://api.hive.blog','https://api.deathwing.me'])
@@ -43,8 +43,8 @@ def get_transactions_for_account(account_name, start_date, end_date):
     transactions = []
 
    # Operations to include/exclude (not working with history_reverse, needs to be filtered in loop)
-    ops = ['return_vesting_delegation','delegate_vesting_shares','transfer_to_vesting','proposal_pay','fill_order','author_reward','comment_benefactor_reward','convert','fill_convert_request','producer_reward','curation_reward','fill_vesting_withdraw','transfer']
-    excluded = ['claim_account','proxy_cleared','create_claimed_account','account_created','witness_update','account_update','witness_set_properties','vote','effective_comment_vote','account_witness_vote','comment','claim_reward_balance','update_proposal_votes','custom_json','comment_reward','comment_payout_update','comment_options','withdraw_vesting','delayed_voting','limit_order_create','limit_order_cancelled']
+    ops = ['interest','return_vesting_delegation','delegate_vesting_shares','transfer_to_vesting','proposal_pay','fill_order','author_reward','comment_benefactor_reward','convert','fill_convert_request','producer_reward','curation_reward','fill_vesting_withdraw','transfer']
+    excluded = ['transfer_to_savings','transfer_from_savings','cancel_transfer_from_savings','claim_account','proxy_cleared','create_claimed_account','account_created','witness_update','account_update','witness_set_properties','vote','effective_comment_vote','account_witness_vote','comment','claim_reward_balance','update_proposal_votes','custom_json','comment_reward','comment_payout_update','comment_options','withdraw_vesting','delayed_voting','limit_order_create','limit_order_cancelled']
        
     # Iterate over account history
     scanned_tx = 0
@@ -86,10 +86,18 @@ def get_transactions_for_account(account_name, start_date, end_date):
                 recipient = h['to']
                 direction = 'incoming' if recipient == account_name else 'outgoing'
 
+            # Interest
+            if h['type'] == 'interest':
+                currency = 'HBD'
+                amount = int(h['interest']['amount']) / 10**h['interest']['precision']
+                sender = 'hive.rewards'
+                recipient = h['owner']
+                direction = 'incoming'
+
             # Fill vesting withdraw
             elif h['type'] == 'fill_vesting_withdraw':
                 currency = 'HIVE'
-                amount = int(h['deposited']['amount']) / 1000
+                amount = int(h['deposited']['amount']) / 10**h['deposited']['precision']
                 sender = 'staked.hive'
                 recipient = h['to_account']
                 direction = 'unstake'
@@ -117,7 +125,7 @@ def get_transactions_for_account(account_name, start_date, end_date):
             # Fill convert request
             elif h['type'] == 'fill_convert_request':
                 currency = 'HIVE'
-                amount = int(h['amount_out']['amount']) / 1000
+                amount = int(h['amount_out']['amount']) / 10**h['amount_out']['precision']
                 sender = h['owner']
                 recipient = h['account']
                 direction = 'incoming'
@@ -125,7 +133,7 @@ def get_transactions_for_account(account_name, start_date, end_date):
             # Convert request
             elif h['type'] == 'convert':
                 currency = 'HBD'
-                amount = int(h['amount']['amount']) / 1000
+                amount = int(h['amount']['amount']) / 10**h['amount']['precision']
                 sender = h['owner']
                 recipient = h['account']
                 direction = 'outgoing'
@@ -171,7 +179,7 @@ def get_transactions_for_account(account_name, start_date, end_date):
             # Proposal pay
             elif h['type'] == 'proposal_pay':
                 currency = 'HBD'
-                amount = int(h['payment']['amount']) / 1000
+                amount = int(h['payment']['amount']) / 10**h['payment']['precision']
                 sender = h['payer']
                 recipient = h['receiver']
                 direction = 'incoming'
@@ -179,7 +187,7 @@ def get_transactions_for_account(account_name, start_date, end_date):
             # Power up
             elif h['type'] == 'transfer_to_vesting':
                 currency = 'HIVE'
-                amount = int(h['amount']['amount']) / 1000
+                amount = int(h['amount']['amount']) / 10**h['amount']['precision']
                 sender = h['from']
                 recipient = 'staked.hive'
                 direction = 'stake'
