@@ -102,7 +102,7 @@ def get_transactions_for_account(account_name, start_date, end_date):
         ("""
         SELECT hafsql.get_timestamp(id), 'fill_vesting_withdraw' AS type, 
                'unstake' AS direction, 
-               'staked.hive' AS sender, to_account AS recipient, 'HIVE' AS currency, hafsql.vests_to_hive(deposited,hafd.operation_id_to_block_num(id)) AS total_amount
+               'staked.hive' AS sender, to_account AS recipient, 'HIVE' AS currency, deposited AS total_amount
         FROM operation_fill_vesting_withdraw_table
         WHERE to_account = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, start_date, end_date)),
