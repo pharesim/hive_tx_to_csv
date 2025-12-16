@@ -42,6 +42,10 @@ def execute_query(conn, cursor, query, params, tx_type, account_name, filter_acc
         return [], False
 
 def execute_query_with_intervals(conn, cursor, query, params, tx_type, account_name, start_date, end_date, interval):
+    cursor.close()
+    conn.close()
+    conn = psycopg2.connect(**db_params)
+    cursor = conn.cursor()
     results = []
     current_start = start_date
     filter_account = interval <= timedelta(days=1)
