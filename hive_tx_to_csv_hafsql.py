@@ -11,7 +11,7 @@ end_date = datetime(2024, 12, 31)
 
 # Database connection parameters
 db_params = {
-    'host': 'hafsql.mahdiyari.info',
+    'host': 'hafsql-sql.mahdiyari.info',
     'port': 5432,
     'database': 'haf_block_log',
     'user': 'hafsql_public',
