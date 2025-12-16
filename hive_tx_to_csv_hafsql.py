@@ -51,7 +51,7 @@ def execute_query_with_intervals(conn, cursor, query, params, tx_type, account_n
             q_parts = query.split("UNION ALL")
             q = []
             for part in q_parts:
-                q.append(part.split(" WHERE ")[0] + " WHERE timestamp BETWEEN %s AND %s")
+                q.append(part.split(" WHERE ")[0] + " WHERE id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)")
             query = " UNION ALL ".join(q)
             if len(params) == 5:
                 params = (account_name, current_start, current_end)
@@ -79,135 +79,135 @@ def get_transactions_for_account(account_name, start_date, end_date):
     # Queries to fetch transactions for each operation type
     queries = [
         ("""
-        SELECT DATE(timestamp) AS date, 'transfer' AS type, 
+        SELECT hafsql.get_timestamp(id), 'transfer' AS type, 
                CASE 
-                   WHEN "to" = %s THEN 'incoming' 
+                   WHEN "to_account" = %s THEN 'incoming' 
                    ELSE 'outgoing' 
                END AS direction, 
-               "from" AS sender, "to" AS recipient, symbol AS currency, amount AS total_amount
-        FROM op_transfer
-        WHERE ("from" = %s OR "to" = %s) AND timestamp BETWEEN %s AND %s
+               "from_account" AS sender, "to_account" AS recipient, symbol AS currency, amount AS total_amount
+        FROM operation_transfer_table
+        WHERE ("from_account" = %s OR "to_account" = %s) AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, account_name, account_name, start_date, end_date)),
         ("""
-        SELECT DATE(timestamp) AS date, 'interest' AS type, 
+        SELECT hafsql.get_timestamp(id), 'interest' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, owner AS recipient, interest_symbol AS currency, interest AS total_amount
-        FROM vo_interest_operation
-        WHERE owner = %s AND timestamp BETWEEN %s AND %s
+        FROM operation_interest_table
+        WHERE owner = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT DATE(timestamp) AS date, 'fill_vesting_withdraw' AS type, 
+        SELECT hafsql.get_timestamp(id), 'fill_vesting_withdraw' AS type, 
                'unstake' AS direction, 
                'staked.hive' AS sender, to_account AS recipient, 'HIVE' AS currency, deposited AS total_amount
-        FROM vo_fill_vesting_withdraw
-        WHERE to_account = %s AND timestamp BETWEEN %s AND %s
+        FROM operation_fill_vesting_withdraw_table
+        WHERE to_account = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT DATE(timestamp) AS date, 'curation_reward' AS type, 
+        SELECT hafsql.get_timestamp(id), 'curation_reward' AS type, 
                'incoming' AS direction, 
-               'hive.rewards' AS sender, curator AS recipient, 'HP' AS currency, reward_historical_hp AS total_amount
-        FROM vo_curation_reward
-        WHERE curator = %s AND timestamp BETWEEN %s AND %s
+               'hive.rewards' AS sender, curator AS recipient, 'HP' AS currency, hafsql.vests_to_hive(reward,hafd.operation_id_to_block_num(id)) AS total_amount
+        FROM operation_curation_reward_table
+        WHERE curator = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT DATE(timestamp) AS date, 'fill_convert_request' AS type, 
+        SELECT hafsql.get_timestamp(id), 'fill_convert_request' AS type, 
                'incoming' AS direction, 
                owner AS sender, owner AS recipient, 'HIVE' AS currency, amount_out AS total_amount
-        FROM vo_fill_convert_request
-        WHERE owner = %s AND timestamp BETWEEN %s AND %s
+        FROM operation_fill_convert_request_table
+        WHERE owner = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT DATE(timestamp) AS date, 'convert' AS type, 
+        SELECT hafsql.get_timestamp(id), 'convert' AS type, 
                'outgoing' AS direction, 
                owner AS sender, owner AS recipient, 'HBD' AS currency, amount AS total_amount
-        FROM op_convert
-        WHERE owner = %s AND timestamp BETWEEN %s AND %s
+        FROM operation_convert_table
+        WHERE owner = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT DATE(timestamp) AS date, 'comment_benefactor_reward' AS type, 
+        SELECT hafsql.get_timestamp(id), 'comment_benefactor_reward' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, benefactor AS recipient, 'HBD' AS currency, hbd_payout AS total_amount
-        FROM vo_comment_benefactor_reward
-        WHERE benefactor = %s AND timestamp BETWEEN %s AND %s
+        FROM operation_comment_benefactor_reward_table
+        WHERE benefactor = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         UNION ALL
-        SELECT DATE(timestamp) AS date, 'comment_benefactor_reward' AS type, 
+        SELECT hafsql.get_timestamp(id), 'comment_benefactor_reward' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, benefactor AS recipient, 'HIVE' AS currency, hive_payout AS total_amount
-        FROM vo_comment_benefactor_reward
-        WHERE benefactor = %s AND timestamp BETWEEN %s AND %s
+        FROM operation_comment_benefactor_reward_table
+        WHERE benefactor = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         UNION ALL
-        SELECT DATE(timestamp) AS date, 'comment_benefactor_reward' AS type, 
+        SELECT hafsql.get_timestamp(id), 'comment_benefactor_reward' AS type, 
                'incoming' AS direction, 
-               'hive.rewards' AS sender, benefactor AS recipient, 'HP' AS currency, vesting_payout_hp AS total_amount
-        FROM vo_comment_benefactor_reward
-        WHERE benefactor = %s AND timestamp BETWEEN %s AND %s
+               'hive.rewards' AS sender, benefactor AS recipient, 'HP' AS currency, hafsql.vests_to_hive(vesting_payout,hafd.operation_id_to_block_num(id)) AS total_amount
+        FROM operation_comment_benefactor_reward_table
+        WHERE benefactor = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, start_date, end_date, account_name, start_date, end_date, account_name, start_date, end_date)),
         ("""
-        SELECT DATE(timestamp) AS date, 'author_reward' AS type, 
+        SELECT hafsql.get_timestamp(id), 'author_reward' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, author AS recipient, 'HBD' AS currency, hbd_payout AS total_amount
-        FROM vo_author_reward
-        WHERE author = %s AND timestamp BETWEEN %s AND %s
+        FROM operation_author_reward_table
+        WHERE author = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         UNION ALL
-        SELECT DATE(timestamp) AS date, 'author_reward' AS type, 
+        SELECT hafsql.get_timestamp(id), 'author_reward' AS type, 
                'incoming' AS direction, 
                'hive.rewards' AS sender, author AS recipient, 'HIVE' AS currency, hive_payout AS total_amount
-        FROM vo_author_reward
-        WHERE author = %s AND timestamp BETWEEN %s AND %s
+        FROM operation_author_reward_table
+        WHERE author = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         UNION ALL
-        SELECT DATE(timestamp) AS date, 'author_reward' AS type, 
+        SELECT hafsql.get_timestamp(id), 'author_reward' AS type, 
                'incoming' AS direction, 
-               'hive.rewards' AS sender, author AS recipient, 'HP' AS currency, vesting_payout_hp AS total_amount
-        FROM vo_author_reward
-        WHERE author = %s AND timestamp BETWEEN %s AND %s
+               'hive.rewards' AS sender, author AS recipient, 'HP' AS currency, hafsql.vests_to_hive(vesting_payout,hafd.operation_id_to_block_num(id)) AS total_amount
+        FROM operation_author_reward_table
+        WHERE author = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, start_date, end_date, account_name, start_date, end_date, account_name, start_date, end_date)),
         ("""
-        SELECT DATE(timestamp) AS date, 'fill_order' AS type, 
+        SELECT hafsql.get_timestamp(id), 'fill_order' AS type, 
                CASE 
                    WHEN open_owner = %s THEN 'incoming' 
                    ELSE 'outgoing' 
                END AS direction, 
                current_owner AS sender, open_owner AS recipient, current_pays_symbol AS currency, current_pays AS total_amount
-        FROM vo_fill_order
-        WHERE (current_owner = %s OR open_owner = %s) AND timestamp BETWEEN %s AND %s
+        FROM operation_fill_order_table
+        WHERE (current_owner = %s OR open_owner = %s) AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, account_name, account_name, start_date, end_date)),
         ("""
-        SELECT DATE(timestamp) AS date, 'proposal_pay' AS type, 
+        SELECT hafsql.get_timestamp(id), 'proposal_pay' AS type, 
                'incoming' AS direction, 
                payer AS sender, receiver AS recipient, 'HBD' AS currency, payment AS total_amount
-        FROM vo_proposal_pay
-        WHERE receiver = %s AND timestamp BETWEEN %s AND %s
+        FROM operation_proposal_pay_table
+        WHERE receiver = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT DATE(timestamp) AS date, 'transfer_to_vesting' AS type, 
+        SELECT hafsql.get_timestamp(id), 'transfer_to_vesting' AS type, 
                'outgoing' AS direction, 
-               "from" AS sender, 'staked.hive' AS recipient, 'HIVE' AS currency, amount AS total_amount
-        FROM op_transfer_to_vesting
-        WHERE "from" = %s AND timestamp BETWEEN %s AND %s
+               "from_account" AS sender, 'staked.hive' AS recipient, 'HIVE' AS currency, amount AS total_amount
+        FROM operation_transfer_to_vesting_table
+        WHERE "from_account" = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT DATE(timestamp) AS date, 'delegate_vesting_shares' AS type, 
+        SELECT hafsql.get_timestamp(id), 'delegate_vesting_shares' AS type, 
                CASE 
                    WHEN delegatee = %s THEN 'incoming' 
                    ELSE 'outgoing' 
                END AS direction, 
-               delegator AS sender, delegatee AS recipient, 'HP' AS currency, vests_historical_hp AS total_amount
-        FROM op_delegate_vesting_shares
-        WHERE (delegator = %s OR delegatee = %s) AND timestamp BETWEEN %s AND %s
+               delegator AS sender, delegatee AS recipient, 'HP' AS currency, hafsql.vests_to_hive(vesting_shares,hafd.operation_id_to_block_num(id)) AS total_amount
+        FROM operation_delegate_vesting_shares_table
+        WHERE (delegator = %s OR delegatee = %s) AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, account_name, account_name, start_date, end_date)),
         ("""
-        SELECT DATE(timestamp) AS date, 'return_vesting_delegation' AS type, 
+        SELECT hafsql.get_timestamp(id), 'return_vesting_delegation' AS type, 
                'undelegate' AS direction, 
-               'delegated.hive' AS sender, account AS recipient, 'HP' AS currency, vesting_shares_historical_hp AS total_amount
-        FROM vo_return_vesting_delegation
-        WHERE account = %s AND timestamp BETWEEN %s AND %s
+               'delegated.hive' AS sender, account AS recipient, 'HP' AS currency, hafsql.vests_to_hive(vesting_shares,hafd.operation_id_to_block_num(id)) AS total_amount
+        FROM operation_return_vesting_delegation_table
+        WHERE account = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, start_date, end_date)),
         ("""
-        SELECT DATE(timestamp) AS date, 'producer_reward' AS type, 
+        SELECT hafsql.get_timestamp(id), 'producer_reward' AS type, 
                'incoming' AS direction, 
-               'hive.rewards' AS sender, producer AS recipient, 'HP' AS currency, vesting_shares_historical_hp AS total_amount
-        FROM vo_producer_reward
-        WHERE producer = %s AND timestamp BETWEEN %s AND %s
+               'hive.rewards' AS sender, producer AS recipient, 'HP' AS currency, hafsql.vests_to_hive(vesting_shares,hafd.operation_id_to_block_num(id)) AS total_amount
+        FROM operation_producer_reward_table
+        WHERE producer = %s AND id BETWEEN hafsql.id_from_timestamp(%s) AND hafsql.id_from_timestamp(%s)
         """, (account_name, start_date, end_date))
     ]
 
@@ -255,4 +255,3 @@ for a in account_names:
     aggregated_data.to_csv(csv_filename, index=False)
 
     print(f"CSV file saved as: {csv_filename}")
-
