@@ -12,7 +12,7 @@ end_date = datetime(2024, 12, 31)
 
 # Initialize the Hive blockchain instance
 hive = Hive(node=['https://api.hive.blog','https://api.deathwing.me'])
-hafsql = 'https://rpc.mahdiyari.info'
+hafsql = 'https://hafsql-sql.mahdiyari.info'
 
 def get_vests_to_hive_ratio(block_num):
     headers = {
