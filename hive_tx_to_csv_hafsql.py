@@ -65,10 +65,10 @@ def execute_query_with_intervals(conn, cursor, query, params, tx_type, account_n
             params = params[:-2] + (current_start, current_end)
         result, success = execute_query(conn, cursor, query, params, tx_type, account_name, filter_account)
         if not success:
-            return [], False
+            return [], False, conn, cursor
         results.extend(result)
         current_start = current_end + timedelta(seconds=1)
-    return results, True
+    return results, True, conn, cursor
 
 def get_transactions_for_account(account_name, start_date, end_date):
     print('Fetching transactions for account ' + account_name + '...')
@@ -222,7 +222,7 @@ def get_transactions_for_account(account_name, start_date, end_date):
             for interval, interval_name in intervals:
                 if interval < end_date - start_date:
                     print(f"\nFailed getting {tx_type} transactions. Trying {interval_name} intervals...", end="")
-                    result, success = execute_query_with_intervals(conn, cursor, query, params, tx_type, account_name, start_date, end_date, interval)
+                    result, success, conn, cursor = execute_query_with_intervals(conn, cursor, query, params, tx_type, account_name, start_date, end_date, interval)
                     if success:
                         break
             if not success:
